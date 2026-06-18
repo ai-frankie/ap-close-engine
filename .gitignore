@@ -1,0 +1,6 @@
+__pycache__/
+.pytest_cache/
+AP_*_Report.xlsx
+AP_Close_Review.xlsx
+AP_Close_Prepared_SAMPLE.xlsx
+*.pyc
