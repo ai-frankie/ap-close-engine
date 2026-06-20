@@ -73,14 +73,13 @@ def run_match(data_dir=None):
         pprice = po["price"]
         if pprice and price is not None and pprice > 0:
             unit_var = abs(price - pprice) / pprice
-            po_total = round(po["qty"] * pprice, 2)
-            inv_total = amt
-            total_var = abs(inv_total - po_total) / po_total if po_total else 0
+            expected_total = round(qty * pprice, 2)
+            total_var = abs(amt - expected_total) / expected_total if expected_total else 0
             if unit_var > PRICE_TOL or total_var > PRICE_TOL:
                 exceptions.append({"invoice": ino, "reason": "PRICE_VARIANCE",
                                    "detail": f"billed {price} vs PO {pprice} "
                                              f"(unit var {unit_var:.1%}, "
-                                             f"total {inv_total:,.2f} vs {po_total:,.2f})"})
+                                             f"total {amt:,.2f} vs expected {expected_total:,.2f})"})
                 continue
 
         matched.append(ino)

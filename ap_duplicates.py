@@ -7,7 +7,7 @@ from collections import defaultdict
 D = os.path.dirname(os.path.abspath(__file__))
 DATE_WINDOW = 7  # days
 GROUP_CAP = 100  # max pairwise comparisons per group
-SUFFIX_PAT = re.compile(r"[-_](R|DUP|COPY|REV)$", re.IGNORECASE)
+SUFFIX_PAT = re.compile(r"[-_]?(R|DUP|COPY|REV|REVERSAL)[-_]?$", re.IGNORECASE)
 
 
 def fnum(x):
