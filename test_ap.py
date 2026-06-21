@@ -9,6 +9,7 @@ from ap_duplicates import find_duplicates, _normalize_inv
 from ap_close import run_close
 from ap_vendor_recon import reconcile
 from ap_review import compute_truth, run_review
+from ap_controls import run_controls
 
 
 @pytest.fixture(scope="module")
@@ -88,7 +89,7 @@ class TestAPClose:
         assert abs(close["ap_subledger"] - 1_186_395.48) < 0.01
 
     def test_gl_ap_balance(self, close):
-        assert abs(close["gl_ap"] - 1_195_037.48) < 0.01
+        assert abs(close["gl_ap"] - 1_200_037.48) < 0.01
 
     def test_aging_sums_to_subledger(self, close):
         total = sum(v["open"] for v in close["agesum"].values())
@@ -200,3 +201,44 @@ class TestCleanWorkbookPasses:
         wb.save(clean)
         rows, fails = run_review(clean)
         assert fails == 0, f"Clean workbook had {fails} failures: {rows}"
+
+
+# ── SOX-style controls register ──────────────────────────────────────────────
+
+class TestControlsRegister:
+    @pytest.fixture(scope="class")
+    @staticmethod
+    def reg():
+        return {c["id"]: c for c in run_controls()["register"]}
+
+    def test_register_has_eight_controls(self):
+        assert len(run_controls()["register"]) == 8
+
+    def test_manual_je_to_ap_control_detected(self, reg):
+        """C8 — the seeded top-side JE (Source='Manual JE', no ref) must FAIL."""
+        assert reg["C8"]["result"] == "FAIL"
+        assert "5,000" in reg["C8"]["detail"]
+
+    def test_manual_je_flag_names_source(self, reg):
+        assert any("Manual JE" in e for e in reg["C8"]["exceptions"])
+
+    def test_grni_unbooked_detected(self, reg):
+        """C12 — GRNI computed but not booked to GL 2150 = unrecorded liability."""
+        assert reg["C12"]["result"] == "FAIL"
+        assert "1,500" in reg["C12"]["detail"]
+
+    def test_clean_data_passes_integrity_controls(self, reg):
+        """C2/C4/C5/C10 should PASS on the clean demo population."""
+        for cid in ("C2", "C4", "C5", "C10"):
+            assert reg[cid]["result"] == "PASS", f"{cid} unexpectedly {reg[cid]['result']}"
+
+    def test_evidenced_controls_report_ok_when_clean(self, reg):
+        for cid in ("C9", "C21"):
+            assert reg[cid]["result"] in ("OK", "REVIEW")
+
+    def test_two_failures_total(self):
+        assert run_controls()["fail_count"] == 2
+
+    def test_every_control_has_objective_and_assertion(self, reg):
+        for c in reg.values():
+            assert c["objective"] and c["assertion"] and c["delivery"] in ("AUTOMATED", "EVIDENCED")

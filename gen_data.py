@@ -115,6 +115,13 @@ def main():
 
     # balance the GL: opening cash + equity
     total_expense = round(ap_sub_total, 2)
+    # ---- PLANTED BREAK 5: manual top-side JE to AP control (subledger bypass) ----
+    # Someone posted a $5,000 credit straight to AP-2000 with no invoice behind it
+    # and a non-subledger Source. The classic management-override red flag — C8.
+    je(AP_CONTROL, "Accounts Payable", "Top-side accrual — no invoice", 0, 5000,
+       "Manual JE", "")
+    je("5000", "Operating Expense", "Top-side accrual offset", 5000, 0, "Manual JE", "")
+
     je("1000", "Cash", "Opening cash", 5_000_000, 0, "Opening", "OPEN")
     je("3000", "Equity", "Opening equity", 0, 5_000_000, "Opening", "OPEN")
 
@@ -144,7 +151,8 @@ def main():
     print(f"GRNI expected: 1,500.00 (PO-4001: 20 x 75, received, no invoice)")
     print(f"Planted breaks: duplicate payment (INV-2001/INV-2001-R), "
           f"price variance (INV-3001), GRNI omission (PO-4001), "
-          f"unapproved PO (PO-5001/INV-5001)")
+          f"unapproved PO (PO-5001/INV-5001), "
+          f"manual top-side JE to AP-2000 (Source='Manual JE', no invoice)")
 
 
 if __name__ == "__main__":

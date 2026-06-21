@@ -15,9 +15,25 @@ All data is **synthetic** (fictional vendors). No real financial data.
 | `ap_match.py` | **3-way match** — validates every invoice against its PO (price, approval) and goods receipt (qty) | Console match/exception report |
 | `ap_duplicates.py` | **Duplicate-payment detection** — flags same vendor + amount with normalized invoice# or near payment dates | Console duplicate report |
 | `ap_close.py` | AP close — aging, open-AP subledger, GL AP-control reconciliation, GRNI accrual, 5 control checks | `AP_Health_Report.xlsx` |
+| `ap_controls.py` | **SOX-style controls register** — 8 named controls in controller language (data integrity, manual-JE detection, cutoff, GRNI-to-GL tie, SoD) | Console controls register |
 | `ap_vendor_recon.py` | **Vendor-statement reconciliation** — matches our open AP to vendor open items at the invoice level | Console vendor-by-vendor report |
 | `ap_review.py` | **Independent QA reviewer** — recomputes truth from raw data, audits a prepared workbook, catches planted errors | `AP_Close_Review.xlsx` |
-| `gen_data.py` | Generates deterministic synthetic data (seeded) with 4 planted breaks | CSV files |
+| `gen_data.py` | Generates deterministic synthetic data (seeded) with 5 planted breaks | CSV files |
+
+## Internal controls
+
+The engine performs a **SOX-style controls register** written from a controller's point of view — every control states its objective, the risk it mitigates, the financial-statement assertion it supports, and a PASS/FAIL/REVIEW result with plain-English flags. Full narrative in **[CONTROLS.md](CONTROLS.md)**.
+
+```
+[FAIL] C8 Manual / top-side JE to AP control account (subledger bypass)
+        assertion: existence/occurrence | AUTOMATED | 1 manual JE(s) to acct 2000 netting +5,000.00
+          - MANUAL JE TO AP CONTROL — Entry JE700381, net +5,000.00; Source='Manual JE'
+            not a subledger feed; no Invoice_Ref. Obtain JE approval before sign-off.
+[FAIL] C12 GRNI accrual booked to GL 2150 (unrecorded-liability check)
+          - GRNI of 1,500.00 computed from receipts is NOT booked to GL 2150. Record before close.
+```
+
+The headline control is **C8 — manual / top-side journal entries to the AP control account**: a credit posted straight to acct 2000 with no invoice behind it and a non-subledger source. It's the classic management-override red flag auditors hunt for, and it's a first-class named control here, not a buried variable.
 
 ## Verified output
 
@@ -98,6 +114,7 @@ python gen_data.py        # generate synthetic data (deterministic)
 python ap_match.py        # 3-way match
 python ap_duplicates.py   # duplicate-payment detection
 python ap_close.py        # AP close + controls
+python ap_controls.py     # SOX-style controls register (controller language)
 python ap_vendor_recon.py # vendor-statement reconciliation
 python ap_review.py       # independent reviewer (catches planted errors)
 ```
